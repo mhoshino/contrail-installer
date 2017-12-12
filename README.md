@@ -91,7 +91,6 @@ This will create a screen names "contrail" with a tab corresponding to each cont
 # Devstack
 
 Trunk of contrail-installer currently works with ~~stable/mitaka~~ stable/ocata of devstack.
-(Due to the devstack not supporting Mitaka recently.)
 
     git clone git@github.com:openstack-dev/devstack
     cd devstack
