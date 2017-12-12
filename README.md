@@ -14,10 +14,10 @@ stable versions, use appropriate release name.
 
 Currently contrail-installer supports the following:
 
-    contrail-installer: sources master,    devstack: stable/mitaka [TBD]
-    contrail-installer: sources R3.0,      devstack: stable/mitaka [TBD]
-    contrail-installer: packages R2.20,    devstack: stable/mitaka [TBD]
-    contrail-installer: package R4.10,     devstack: stable/ocata  [NEW]
+    contrail-installer: sources master,    devstack: stable/mitaka
+    contrail-installer: sources R3.0,      devstack: stable/mitaka
+    contrail-installer: packages R2.20,    devstack: stable/mitaka
+    contrail-installer: sources master,    devstack: stable/ocata  [NEW]
 
 **Note it is recommended to start devstack before OpenContrail due to OpenContrail uses some old packages and they will break devstack**
 
