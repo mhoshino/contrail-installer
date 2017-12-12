@@ -14,9 +14,12 @@ stable versions, use appropriate release name.
 
 Currently contrail-installer supports the following:
 
-    contrail-installer: sources master,    devstack: stable/mitaka
-    contrail-installer: sources R3.0,      devstack: stable/mitaka
-    contrail-installer: packages R2.20,    devstack: stable/mitaka
+    contrail-installer: sources master,    devstack: stable/mitaka [TBD]
+    contrail-installer: sources R3.0,      devstack: stable/mitaka [TBD]
+    contrail-installer: packages R2.20,    devstack: stable/mitaka [TBD]
+    contrail-installer: package R4.10,     devstack: stable/ocata  [NEW]
+
+**Note it is recommended to start devstack before OpenContrail due to OpenContrail uses some old packages and they will break devstack**
 
 # OpenContrail localrc
 
@@ -87,11 +90,12 @@ This will create a screen names "contrail" with a tab corresponding to each cont
 
 # Devstack
 
-Trunk of contrail-installer currently works with stable/mitaka of devstack.
+Trunk of contrail-installer currently works with ~~stable/mitaka~~ stable/ocata of devstack.
+(Due to the devstack not supporting Mitaka recently.)
 
     git clone git@github.com:openstack-dev/devstack
     cd devstack
-    git checkout stable/mitaka
+    git checkout stable/ocata
     
 A glue file is needed for devstack to use Contrail neutron plugin
 

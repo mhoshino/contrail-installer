@@ -299,7 +299,7 @@ function download_dependencies {
         apt_get install python-setuptools
         apt_get install python-novaclient
         apt_get install curl
-	    if [[ "$DISTRO" != "trusty" ]]; then
+	    if [[ "$DISTRO" != "trusty" ]] && [[ "$DISTRO" != "xenial" ]]; then
             apt_get install chkconfig
         else
             apt_get install sysv-rc-conf
@@ -307,7 +307,7 @@ function download_dependencies {
         apt_get install screen
         apt_get install default-jdk javahelper
         apt_get install libcommons-codec-java libhttpcore-java liblog4j1.2-java
-	    apt_get install python-software-properties
+	apt_get install python-software-properties
         sudo -E add-apt-repository -y cloud-archive:precise
         sudo -E add-apt-repository -y ppa:opencontrail
         apt_get update
@@ -322,15 +322,20 @@ function download_dependencies {
             apt_get install python-lxml python-redis python-jsonpickle
             apt_get install ant debhelper 
             apt_get install linux-headers-$(uname -r)
-            apt_get install libipfix-dev
-            apt_get install python-docker-py
+	    if [[ ${DISTRO} == "xenial" ]]; then
+		apt_get install python-docker
+		pip_install sseclient
+	    else
+                apt_get install libipfix-dev
+	        apt_get install python-docker-py
+                apt_get install python-sseclient
+	    fi
             apt_get install libzookeeper-mt2 libzookeeper-mt-dev
             apt_get install libpcap-dev
-            apt_get install python-sseclient
             download_cassandra_cpp_drivers
         fi	
         apt_get install libvirt-bin
-        if [[ ${DISTRO} =~ (trusty) ]]; then
+	if [[ ${DISTRO} =~ "trusty" ]] || [[ ${DISTRO} =~ "xenial" ]]; then
             apt_get install software-properties-common
             apt_get install libboost-dev libboost-chrono-dev libboost-date-time-dev
             apt_get install libboost-filesystem-dev libboost-program-options-dev
@@ -343,6 +348,7 @@ function download_dependencies {
             apt_get install rabbitmq-server
             apt_get install python-kombu
             apt_get install kafka
+	    disable_service kafka
         fi
         apt_get install python-sphinx
         # ping requirements
@@ -404,7 +410,11 @@ function download_python_dependencies {
     # sudo pip install gevent==0.13.8 geventhttpclient==1.0a thrift==0.8.0
     # sudo easy_install -U distribute
     if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-        pip_install gevent==1.0 geventhttpclient==1.0a thrift
+        if [[ "$DISTRO" == "xenial" ]]; then
+            pip_install gevent geventhttpclient thrift
+	else 
+            pip_install gevent==1.0 geventhttpclient==1.0a thrift
+	fi
         pip_install netifaces fabric argparse
         pip_install bottle
         pip_install uuid psutil
@@ -422,7 +432,7 @@ function download_python_dependencies {
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
         pip_install pycassa stevedore xmltodict python-keystoneclient
         pip_install kazoo pyinotify
-        if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then    
+        if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]] && [[ "$DISTRO" != "xenial" ]]; then    
             pip_install stevedore==1.0.0.0a1
         fi 
     fi
@@ -496,21 +506,43 @@ function repo_initialize_backup {
 function upgrade_python_paste {
     echo "Downloading python-paste"
     if is_ubuntu; then
-        #wget http://http.us.debian.org/debian/pool/main/p/paste/python-paste_2.0.3+dfsg-4_all.deb
-        #sudo dpkg -i python-paste_2.0.3+dfsg-4_all.deb
-        wget http://mirror2.tuxinator.org/deepin/pool/main/p/paste/python-paste_2.0.2+dfsg-1_all.deb
-        sudo dpkg -i python-paste_2.0.2+dfsg-1_all.deb
+	if [[ ${DISTRO} == "xenial" ]]; then
+	    apt_get install python-formencode python-tempita
+	else
+            wget http://mirror2.tuxinator.org/deepin/pool/main/p/paste/python-paste_2.0.2+dfsg-1_all.deb
+            sudo dpkg -i python-paste_2.0.2+dfsg-1_all.deb
+	fi
     fi
 }
 
 function download_cassandra_cpp_drivers {
     echo "Downloading cassanadra CPP drivers"
     if is_ubuntu; then
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.0/cassandra-cpp-driver_2.2.0-1_amd64.deb
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.0/cassandra-cpp-driver-dev_2.2.0-1_amd64.deb
-        wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/dependencies/libuv/v1.7.5/libuv_1.7.5-1_amd64.deb
-        sudo dpkg -i cassandra-cpp-driver_2.2.0-1_amd64.deb cassandra-cpp-driver-dev_2.2.0-1_amd64.deb libuv_1.7.5-1_amd64.deb
+        if [[ "$DISTRO" == "xenial" ]]; then
+            wget -nc http://downloads.datastax.com/cpp-driver/ubuntu/16.04/cassandra/v2.7.0/cassandra-cpp-driver_2.7.0-1_amd64.deb
+            wget -nc http://downloads.datastax.com/cpp-driver/ubuntu/16.04/cassandra/v2.7.0/cassandra-cpp-driver-dev_2.7.0-1_amd64.deb
+            wget -nc http://downloads.datastax.com/cpp-driver/ubuntu/16.04/dependencies/libuv/v1.13.1/libuv_1.13.1-1_amd64.deb
+            sudo dpkg -i cassandra-cpp-driver_2.7.0-1_amd64.deb cassandra-cpp-driver-dev_2.7.0-1_amd64.deb libuv_1.13.1-1_amd64.deb
+        else
+            wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.0/cassandra-cpp-driver_2.2.0-1_amd64.deb
+            wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/cassandra/v2.2.0/cassandra-cpp-driver-dev_2.2.0-1_amd64.deb
+            wget http://downloads.datastax.com/cpp-driver/ubuntu/14.04/dependencies/libuv/v1.7.5/libuv_1.7.5-1_amd64.deb
+            sudo dpkg -i cassandra-cpp-driver_2.2.0-1_amd64.deb cassandra-cpp-driver-dev_2.2.0-1_amd64.deb libuv_1.7.5-1_amd64.deb
+        fi
     fi
+}
+
+function download_cassandra16 {
+	# get the latest Cassandra
+	echo \
+	"deb http://www.apache.org/dist/cassandra/debian 311x main" \
+	| sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+	curl https://www.apache.org/dist/cassandra/KEYS | sudo apt-key add 
+	apt_get update
+	apt_get install cassandra
+	disable_service cassandra
+	# enable RPC to Thrift
+	sudo sed -i -e 's/start_rpc: false/start_rpc: true/' /etc/cassandra/cassandra.yaml
 }
 
 function download_cassandra {
@@ -631,9 +663,20 @@ function build_contrail() {
 	sudo mv repo /usr/bin
     fi
 
-    source install_pip.sh
-    /bin/bash install_pip.sh
-        
+    if [[ "$DISTRO" == "xenial" ]]; then
+	apt_get install -y libssl-dev libtool-bin libpcre3-dev libbz2-dev \
+	    libtokyocabinet-dev liblz4-dev libsasl2-dev libgrok1 libtbb-dev \
+	    libboost-all-dev liblog4cplus-dev libgtest-dev google-mock libgrok-dev
+	apt_get install -y python-pip
+	wget -nc https://launchpad.net/~opencontrail/+archive/ubuntu/ppa/+build/7946981/+files/libipfix-dev_0.8.2-1_amd64.deb
+	wget -nc https://launchpad.net/~opencontrail/+archive/ubuntu/ppa/+build/7946981/+files/libipfix_0.8.2-1_amd64.deb
+	wget -nc https://launchpad.net/~opencontrail/+archive/ubuntu/ppa/+build/7946981/+files/libipfix-dev_0.8.2-1_amd64.deb
+	sudo dpkg -i libipfix*deb
+    else
+	source install_pip.sh
+	/bin/bash install_pip.sh
+    fi
+
     if [[ $(read_stage) == "Dependencies" ]]; then
         download_python_dependencies
         change_stage "Dependencies" "python-dependencies"
@@ -757,17 +800,23 @@ function install_contrail() {
                 #download_ifmap_irond
                 cd $CONTRAIL_SRC
                 sudo chown -R `whoami`:`whoami` build/
-                if is_ubuntu; then
+		if is_older_than_R4; then
+                  if is_ubuntu; then
                     sudo -E make -f packages.make package-ifmap-server  
                     sudo cp $CONTRAIL_SRC/build/packages/ifmap-server/build/irond.jar $CONTRAIL_SRC/build/packages/ifmap-server  
-                else
+                  else
                     cd third_party
                     wget http://trust.f4.hs-hannover.de/download/iron/archive/irond-0.3.0-bin.zip
                     unzip irond-0.3.0-bin.zip
-                fi
+                  fi
+		fi
                 
                 # ncclient
-                download_ncclient
+		if [[ "$DISTRO" == "xenial" ]]; then
+		    sudo pip install ncclient
+		else
+                    download_ncclient
+		fi
  
                 contrail_cwd=$(pwd)
     		cd $CONTRAIL_SRC
@@ -797,7 +846,9 @@ function install_contrail() {
                 #apt_get install neutron-plugin-contrail-agent contrail-config-openstack
                 apt_get install contrail-web-core 
                 apt_get install contrail-web-controller
-                apt_get install ifmap-server 
+		if is_older_than_R4; then
+                    apt_get install ifmap-server
+		fi 
                 apt_get install python-ncclient
                 apt_get install contrail-dns
 
@@ -807,7 +858,11 @@ function install_contrail() {
                 sudo chown -R `whoami`:`whoami` /etc/neutron
             fi
             # get cassandra
-            download_cassandra
+            if [[ ${DISTRO} == "xenial" ]]; then
+		download_cassandra16
+	    else
+		download_cassandra
+	    fi
             rabbit_setuser "$RABBIT_USER" "$RABBIT_PASSWORD"
             download_zookeeper
             # handle paste requirement mismatch between contrail (1.7.5.1) and devstack (2.0.2+)
@@ -980,7 +1035,11 @@ function pywhere() {
 
 function stop_contrail_services() {
 
-    services=(supervisor-analytics supervisor-control supervisor-config supervisor-vrouter contrail-analytics-api contrail-control contrail-query-engine contrail-vrouter-agent contrail-api contrail-schema contrail-webui-jobserver contrail-collector contrail-dns contrail-svc-monitor contrail-webui-webserver ifmap-server)
+    services=(supervisor-analytics supervisor-control supervisor-config supervisor-vrouter contrail-analytics-api contrail-control contrail-query-engine contrail-vrouter-agent contrail-api contrail-schema contrail-webui-jobserver contrail-collector contrail-dns contrail-svc-monitor contrail-webui-webserver)
+    if is_older_than_R4; then
+        services+=(ifmap-server)
+    fi
+
     for service in ${services[@]} 
     do
         sudo service $service stop
@@ -1049,21 +1108,23 @@ function start_contrail() {
         redis-cli flushall
         screen_it redis "sudo redis-server $REDIS_CONF"
 
-        screen_it cass "sudo MAX_HEAP_SIZE=$CASS_MAX_HEAP_SIZE HEAP_NEWSIZE=$CASS_HEAP_NEWSIZE $CASS_PATH -f"
+        screen_it cass "sudo MAX_HEAP_SIZE=$CASS_MAX_HEAP_SIZE HEAP_NEWSIZE=$CASS_HEAP_NEWSIZE $CASS_PATH -f -R"
 
         screen_it zk  "cd $CONTRAIL_SRC/third_party/zookeeper-${ZK_VER}; ./bin/zkServer.sh start"
 
         screen_it kafka "sudo /usr/share/kafka/bin/kafka-server-start.sh /usr/share/kafka/config/server.properties"
 
-	if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
+	if is_older_than_R4; then
+	  if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
             if is_ubuntu; then
                 screen_it ifmap "cd $CONTRAIL_SRC/build/packages/ifmap-server; java -jar ./irond.jar"
             else
                 screen_it ifmap "cd $CONTRAIL_SRC/third_party/irond-0.3.0-bin; java -jar ./irond.jar"
             fi
-        else
+          else
             screen_it ifmap "cd /usr/share/ifmap-server; sudo java -jar ./irond.jar" 
-        fi
+          fi
+	fi
         sleep 2
 
         RABBIT_OPTS="--rabbit_user ${RABBIT_USER} --rabbit_password ${RABBIT_PASSWORD} --rabbit_server ${RABBIT_IP}"
@@ -1320,7 +1381,9 @@ function stop_contrail() {
         screen_stop redis
         screen_stop cass
         screen_stop zk
-        screen_stop ifmap
+	if is_older_than_R4; then
+            screen_stop ifmap
+	fi
         screen_stop kafka
         screen_stop disco
         screen_stop apiSrv

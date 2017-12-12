@@ -937,7 +937,7 @@ function fixup_config_files()
     setenforce 0
 
     # Disable iptables      
-    if [[ "$DISTRO" != "trusty" ]]; then
+    if [[ "$DISTRO" != "trusty" ]] && [[ "$DISTRO" != "xenial" ]]; then
         sudo chkconfig iptables off
     else
         sudo sysv-rc-conf iptables off
@@ -1027,7 +1027,7 @@ function fixup_config_files()
         #migrate_routes $dev
         :
     fi
-    if [[ "$DISTRO" != "trusty" ]]; then
+    if [[ "$DISTRO" != "trusty" ]] && [[ "$DISTRO" != "xenial" ]]; then
         sudo chkconfig network on
     else
         sudo sysv-rc-conf network on
