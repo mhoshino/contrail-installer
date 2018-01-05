@@ -717,6 +717,14 @@ function build_contrail() {
             setup_libipfix
         fi
 
+        if [ ${HW_ACCEL} = "DPDK" ]; then
+            apt_get install git liburcu-dev
+            contrail_cwd=$(pwd)
+            cd ${THIRDPARTY_SRC}
+            git clone https://github.com/juniper/contrail-dpdk.git -b ${CONTRAIL_BRANCH} dpdk
+            cd ${contrail_cwd}
+        fi
+        
         if [ "$INSTALL_PROFILE" = "ALL" ]; then
             if [[ $(read_stage) == "fetch-packages" ]]; then
                 sudo scons $SCONS_ARGS
@@ -947,7 +955,11 @@ function insert_vrouter() {
     fi
     # don't die in small memory environments
     if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-        sudo insmod $CONTRAIL_SRC/vrouter/$kmod vr_flow_entries=2048 vr_oflow_entries=256 vr_bridge_entries=256
+        if [ ${HW_ACCEL} = "DPDK" ]; then
+            taskset -c 2 /usr/bin/contrail-vrouter-dpdk --no-daemon --socket-mem 1024,1024
+        else
+            sudo insmod $CONTRAIL_SRC/vrouter/$kmod vr_flow_entries=2048 vr_oflow_entries=256 vr_bridge_entries=256
+        fi
         if [[ $? -eq 1 ]] ; then 
             exit 1
         fi
@@ -965,17 +977,22 @@ function insert_vrouter() {
         echo "Creating vhost interface: $DEVICE."
         VIF=/usr/bin/vif
     fi 
-    
+
+    PMD=""
+    if [ ${HW_ACCEL} = "DPDK" ]; then
+        PMD="--pmd"
+    fi
+
     DEV_MAC=$(cat /sys/class/net/$dev/address)
     sudo $VIF --create $DEVICE --mac $DEV_MAC \
         || echo "Error creating interface: $DEVICE"
 
     echo "Adding $dev to vrouter"
-    sudo $VIF --add $dev --mac $DEV_MAC --vrf 0 --vhost-phys --type physical \
+    sudo $VIF --add $dev --mac $DEV_MAC --vrf 0 --vhost-phys --type physical ${PMD} \
 	|| echo "Error adding $dev to vrouter"
 
     echo "Adding $DEVICE to vrouter"
-    sudo $VIF --add $DEVICE --mac $DEV_MAC --vrf 0 --xconnect $dev --type vhost \
+    sudo $VIF --add $DEVICE --mac $DEV_MAC --vrf 0 --xconnect $dev --type vhost ${PMD} \
 	|| echo "Error adding $DEVICE to vrouter"
 
     if is_ubuntu; then
@@ -1183,7 +1200,12 @@ function start_contrail() {
         screen_it named "sudo /usr/bin/contrail-named -f -c /etc/contrail/dns/contrail-named.conf"
 
         #provision control
-        python $PROV_MS_PATH/provision_control.py --api_server_ip $SERVICE_HOST --api_server_port 8082 --host_name $HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 --oper add --admin_user $admin_user --admin_password $admin_passwd --admin_tenant_name $admin_tenant
+        DPDK_ENABLE=""
+        if [ ${HW_ACCEL} = "DPDK" ]; then
+            DPDK_ENABLE="--dpdk-enabled True"
+        fi
+
+        python $PROV_MS_PATH/provision_control.py --api_server_ip $SERVICE_HOST --api_server_port 8082 --host_name $HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 --oper add --admin_user $admin_user --admin_password $admin_passwd --admin_tenant_name $admin_tenant ${DPDK_ENABLE}
 
         # Provision Vrouter - must be run after API server and schema transformer are up
         sleep 2
