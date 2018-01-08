@@ -717,7 +717,7 @@ function build_contrail() {
             setup_libipfix
         fi
 
-        if [ ${HW_ACCEL} = "DPDK" ]; then
+        if is_dpdk_on; then
             apt_get install git liburcu-dev
             contrail_cwd=$(pwd)
             cd ${THIRDPARTY_SRC}
@@ -780,6 +780,13 @@ function install_contrail() {
     echo_summary "-----------------------INSTALL PHASE STARTED------------------------" 
     validstage_atoption "install"
     [[ $? -eq 1 ]] && invalid_option_exit "install"
+
+    # Checking if Hugepages are enabled if DPDK option is ON
+    if is_dpdk_on && ! is_hugepages_2mb && ! is_hugepages_1gb ; then
+        echo "DPDK requires hugepages to be enabled"
+        exit 1
+    fi
+
     cd $CONTRAIL_SRC
     if [ "$INSTALL_PROFILE" = "ALL" ]; then
         if [[ $(read_stage) == "Build" ]] || [[ $(read_stage) == "install" ]]; then
@@ -955,8 +962,12 @@ function insert_vrouter() {
     fi
     # don't die in small memory environments
     if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
-        if [ ${HW_ACCEL} = "DPDK" ]; then
-            taskset -c 2 /usr/bin/contrail-vrouter-dpdk --no-daemon --socket-mem 1024,1024
+        if is_dpdk_on; then
+            sudo modprobe uio
+            sudo insmod $CONTRAIL_SRC/build/production/vrouter/dpdk/x86_64-native-linuxapp-gcc/kmod/igb_uio.ko
+            sudo insmod $CONTRAIL_SRC/build/production/vrouter/dpdk/x86_64-native-linuxapp-gcc/kmod/rte_kni.ko
+            sudo $CONTRAIL_SRC/third_party/dpdk/usertools/dpdk-devbind.py --bind=igb_uio ${PHYSICAL_INTERFACE}
+            taskset -c 2 /usr/bin/contrail-vrouter-dpdk --no-huge --no-daemon --socket-mem 1024,1024
         else
             sudo insmod $CONTRAIL_SRC/vrouter/$kmod vr_flow_entries=2048 vr_oflow_entries=256 vr_bridge_entries=256
         fi
@@ -979,7 +990,7 @@ function insert_vrouter() {
     fi 
 
     PMD=""
-    if [ ${HW_ACCEL} = "DPDK" ]; then
+    if is_dpdk_on; then
         PMD="--pmd"
     fi
 
@@ -1037,11 +1048,20 @@ END { @dns && print(" dns-nameservers ", join(" ", @dns), "\n") }' /etc/resolv.c
 
 function test_insert_vrouter ()
 {
-    if lsmod | grep -q vrouter; then 
-	echo "vrouter module already inserted."
+    if is_dpdk_on; then
+	if lsmod | grep -q igb_uio; then
+            echo "igb_uio already inserted"
+        else
+            insert_vrouter
+            echo "vrouter DPDK modules inserted."
+        fi
     else
-	insert_vrouter
-	echo "vrouter kernel module inserted."
+        if lsmod | grep -q vrouter; then 
+	    echo "vrouter module already inserted."
+        else
+	    insert_vrouter
+	    echo "vrouter kernel module inserted."
+        fi
     fi
 }
 
@@ -1201,8 +1221,9 @@ function start_contrail() {
 
         #provision control
         DPDK_ENABLE=""
-        if [ ${HW_ACCEL} = "DPDK" ]; then
+        if is_dpdk_on; then
             DPDK_ENABLE="--dpdk-enabled True"
+            DPDK_ENABLE=""
         fi
 
         python $PROV_MS_PATH/provision_control.py --api_server_ip $SERVICE_HOST --api_server_port 8082 --host_name $HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 --oper add --admin_user $admin_user --admin_password $admin_passwd --admin_tenant_name $admin_tenant ${DPDK_ENABLE}

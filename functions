@@ -2138,6 +2138,23 @@ function is_older_than_R4 {
     [[ ${CONTRAIL_BRANCH} != "master" ]] && [[ ${CONTRAIL_BRANCH} < "R4.0" ]]
 }
 
+# Determine if 2MB hugepages are enabled
+function is_hugepages_2mb {
+    COUNT=$(grep pse /proc/cpuinfo | uniq | wc -l)
+    [[ ${COUNT} == "1" ]]
+}
+
+# Determine if 1GB hugepages are enabled
+function is_hugepages_1gb {
+    COUNT=$(grep pdpe1gb /proc/cpuinfo | uniq | wc -l)
+    [[ ${COUNT} == "1" ]]
+}
+
+# Determine if DPDK option is turned on
+function is_dpdk_on {
+    [[ ${HW_ACCEL} == "DPDK" ]]
+}
+
 # Stop and disable a service
 function disable_service {
     sudo service ${1} stop
