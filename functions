@@ -2150,6 +2150,12 @@ function is_hugepages_1gb {
     [[ ${COUNT} == "1" ]]
 }
 
+# Determine if hugepages are enabled
+function has_hugepages {
+    HP=$(grep HugePages_Free /proc/meminfo | awk '{ print $2; }')
+    [[ ${HP} > 0 ]]
+}
+
 # Determine if DPDK option is turned on
 function is_dpdk_on {
     [[ ${HW_ACCEL} == "DPDK" ]]

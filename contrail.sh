@@ -782,7 +782,7 @@ function install_contrail() {
     [[ $? -eq 1 ]] && invalid_option_exit "install"
 
     # Checking if Hugepages are enabled if DPDK option is ON
-    if is_dpdk_on && ! is_hugepages_2mb && ! is_hugepages_1gb ; then
+    if is_dpdk_on && ! has_hugepages ; then
         echo "DPDK requires hugepages to be enabled"
         exit 1
     fi
@@ -1222,16 +1222,15 @@ function start_contrail() {
         #provision control
         DPDK_ENABLE=""
         if is_dpdk_on; then
-            DPDK_ENABLE="--dpdk-enabled True"
-            DPDK_ENABLE=""
+            DPDK_ENABLE="--dpdk-enabled"
         fi
 
-        python $PROV_MS_PATH/provision_control.py --api_server_ip $SERVICE_HOST --api_server_port 8082 --host_name $HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 --oper add --admin_user $admin_user --admin_password $admin_passwd --admin_tenant_name $admin_tenant ${DPDK_ENABLE}
+        python $PROV_MS_PATH/provision_control.py --api_server_ip $SERVICE_HOST --api_server_port 8082 --host_name $HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 --oper add --admin_user $admin_user --admin_password $admin_passwd --admin_tenant_name $admin_tenant
 
         # Provision Vrouter - must be run after API server and schema transformer are up
         sleep 2
         #changed because control_param.conf is commented
-        python $PROV_MS_PATH/provision_vrouter.py --host_name `hostname` --host_ip $CONTROL_IP --api_server_ip $SERVICE_HOST --oper add --admin_user $admin_user --admin_password $admin_passwd --admin_tenant_name $admin_tenant
+        python $PROV_MS_PATH/provision_vrouter.py --host_name `hostname` --host_ip $CONTROL_IP --api_server_ip $SERVICE_HOST --oper add --admin_user $admin_user --admin_password $admin_passwd --admin_tenant_name $admin_tenant ${DPDK_ENABLE}
 
     elif [ "$INSTALL_PROFILE" = "COMPUTE" ]; then
         admin_user=${CONTRAIL_ADMIN_USERNAME:-"admin"}
