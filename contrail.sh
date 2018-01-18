@@ -967,7 +967,7 @@ function insert_vrouter() {
             sudo insmod $CONTRAIL_SRC/build/production/vrouter/dpdk/x86_64-native-linuxapp-gcc/kmod/igb_uio.ko
             sudo insmod $CONTRAIL_SRC/build/production/vrouter/dpdk/x86_64-native-linuxapp-gcc/kmod/rte_kni.ko
             sudo $CONTRAIL_SRC/third_party/dpdk/usertools/dpdk-devbind.py --bind=igb_uio ${PHYSICAL_INTERFACE}
-            taskset -c 2 /usr/bin/contrail-vrouter-dpdk --no-huge --no-daemon --socket-mem 1024,1024
+            taskset -c 2 /usr/bin/contrail-vrouter-dpdk --no-huge
         else
             sudo insmod $CONTRAIL_SRC/vrouter/$kmod vr_flow_entries=2048 vr_oflow_entries=256 vr_bridge_entries=256
         fi
@@ -1222,7 +1222,7 @@ function start_contrail() {
         #provision control
         DPDK_ENABLE=""
         if is_dpdk_on; then
-            DPDK_ENABLE="--dpdk-enabled"
+            DPDK_ENABLE="--dpdk_enabled"
         fi
 
         python $PROV_MS_PATH/provision_control.py --api_server_ip $SERVICE_HOST --api_server_port 8082 --host_name $HOSTNAME --host_ip $CONTROL_IP --router_asn 64512 --oper add --admin_user $admin_user --admin_password $admin_passwd --admin_tenant_name $admin_tenant
