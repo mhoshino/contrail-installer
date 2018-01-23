@@ -967,7 +967,7 @@ function insert_vrouter() {
             sudo insmod $CONTRAIL_SRC/build/production/vrouter/dpdk/x86_64-native-linuxapp-gcc/kmod/igb_uio.ko
             sudo insmod $CONTRAIL_SRC/build/production/vrouter/dpdk/x86_64-native-linuxapp-gcc/kmod/rte_kni.ko
             sudo $CONTRAIL_SRC/third_party/dpdk/usertools/dpdk-devbind.py --bind=igb_uio ${PHYSICAL_INTERFACE}
-            taskset -c 2 /usr/bin/contrail-vrouter-dpdk --no-huge
+            sudo taskset -c 2 /usr/bin/contrail-vrouter-dpdk --socket-mem 1024 1024
         else
             sudo insmod $CONTRAIL_SRC/vrouter/$kmod vr_flow_entries=2048 vr_oflow_entries=256 vr_bridge_entries=256
         fi
