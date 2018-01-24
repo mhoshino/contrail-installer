@@ -963,7 +963,7 @@ function insert_vrouter() {
     # don't die in small memory environments
     if [[ "$CONTRAIL_DEFAULT_INSTALL" != "True" ]]; then
         if is_dpdk_on; then
-            sudo modprobe uio
+            sudo modprobe uio_pci_generic
             sudo insmod $CONTRAIL_SRC/build/production/vrouter/dpdk/x86_64-native-linuxapp-gcc/kmod/igb_uio.ko
             sudo insmod $CONTRAIL_SRC/build/production/vrouter/dpdk/x86_64-native-linuxapp-gcc/kmod/rte_kni.ko
             sudo $CONTRAIL_SRC/third_party/dpdk/usertools/dpdk-devbind.py --bind=igb_uio ${PHYSICAL_INTERFACE}
