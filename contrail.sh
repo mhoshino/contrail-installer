@@ -296,6 +296,7 @@ function download_dependencies {
     echo "Downloading dependencies"
     if is_ubuntu; then
         apt_get update
+        apt_get install pkg-config
         apt_get install python-setuptools
         apt_get install python-novaclient
         apt_get install curl
